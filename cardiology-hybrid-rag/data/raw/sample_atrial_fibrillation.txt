@@ -1,0 +1,99 @@
+# Atrial Fibrillation: Diagnosis and Management
+
+Atrial fibrillation (AF) is the most common sustained cardiac arrhythmia,
+affecting approximately 33 million individuals worldwide. Its prevalence
+increases with age, reaching approximately 10% in adults over 80 years.
+
+## Pathophysiology
+
+The hallmark of AF is chaotic, rapid atrial electrical activity resulting in
+irregular ventricular response. Multiple re-entrant wavelets propagate
+simultaneously through the atrial myocardium. Heart rate typically ranges from
+100-160 bpm during untreated AF.
+
+Key pathological mechanisms include:
+- Electrical remodelling: shortening of the atrial refractory period
+- Structural remodelling: atrial fibrosis and dilation
+- Autonomic modulation: sympathetic and parasympathetic triggers
+
+## Diagnosis
+
+Diagnosis is confirmed by 12-lead ECG showing irregularly irregular rhythm
+with absence of distinct P waves. The QRS complex is usually narrow (<120 ms)
+unless aberrant conduction or bundle branch block exists.
+
+Diagnostic criteria:
+- Irregular RR intervals with no distinct P waves
+- Atrial rate 350-600 impulses per minute
+- Ventricular rate typically 100-160 bpm (untreated)
+
+Holter monitoring (24-48 hour ambulatory ECG) or implantable loop recorders
+are used to detect paroxysmal AF when standard ECG is non-diagnostic.
+
+## Risk Stratification
+
+The CHA2DS2-VASc score guides anticoagulation decisions:
+- C: Congestive heart failure (1 point)
+- H: Hypertension (1 point)
+- A2: Age >= 75 years (2 points)
+- D: Diabetes mellitus (1 point)
+- S2: Stroke/TIA/thromboembolism (2 points)
+- V: Vascular disease (1 point)
+- A: Age 65-74 years (1 point)
+- Sc: Sex category female (1 point)
+
+Score >= 2 in males or >= 3 in females: anticoagulation strongly recommended.
+
+Bleeding risk is assessed with the HAS-BLED score. A high HAS-BLED score
+(>= 3) should prompt correction of modifiable bleeding risk factors, not
+withholding of anticoagulation.
+
+## Treatment
+
+### Rate Control
+
+Rate control is the initial strategy in most patients. Target resting
+heart rate is <110 bpm (lenient) or <80 bpm (strict, selected patients).
+
+Agents:
+- Beta-blockers: metoprolol succinate 25-200 mg/day, bisoprolol 2.5-10 mg/day
+- Non-dihydropyridine CCBs: diltiazem 120-360 mg/day, verapamil 120-480 mg/day
+- Digoxin: 0.125-0.25 mg/day (primarily in sedentary patients with HFrEF)
+
+### Rhythm Control
+
+Rhythm control is preferred in symptomatic patients, younger patients, and
+those with heart failure with reduced ejection fraction (HFrEF).
+
+Antiarrhythmic drugs (AADs):
+- Flecainide 100-200 mg BID (structurally normal heart only)
+- Propafenone 150-300 mg TID (structurally normal heart only)
+- Amiodarone 200 mg/day maintenance (most effective, most side effects)
+- Dronedarone 400 mg BID (avoid in permanent AF or severe HF)
+
+Catheter ablation (pulmonary vein isolation, PVI) achieves rhythm control
+in 60-80% of patients at 1 year and is preferred over AADs in many centres.
+
+### Anticoagulation
+
+Direct oral anticoagulants (DOACs) are preferred over warfarin:
+- Apixaban 5 mg BID (or 2.5 mg BID if >= 2 of: age >= 80, weight <= 60 kg, creatinine >= 1.5 mg/dL)
+- Rivaroxaban 20 mg OD with evening meal
+- Dabigatran 150 mg BID (or 110 mg BID in selected patients)
+- Edoxaban 60 mg OD (or 30 mg OD if CrCl 15-50 mL/min, weight <= 60 kg)
+
+Warfarin (target INR 2.0-3.0) remains appropriate when DOACs are unavailable,
+in patients with mechanical heart valves, or in moderate-to-severe mitral
+stenosis.
+
+## Prognosis
+
+AF significantly increases the risk of:
+- Stroke: 5-fold increase; 20-30% of all strokes are AF-related
+- Heart failure: bidirectional relationship; AF precipitates and worsens HF
+- Dementia: independent risk factor
+- Mortality: 2-fold increase in age-adjusted mortality
+
+With appropriate anticoagulation, stroke risk is reduced by 60-70%.
+Early rhythm control (initiated within 1 year of diagnosis) is associated
+with improved cardiovascular outcomes in selected patients (EAST-AFNET 4 trial).
