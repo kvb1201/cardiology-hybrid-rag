@@ -1,0 +1,52 @@
+# =============================================================================
+# requirements.txt
+# Hybrid Text Retrieval for Evidence-Grounded Cardiovascular Diagnostic Reasoning
+#
+# STAGE: Initial setup / data-processing only.
+# ML/LLM packages (faiss, sentence-transformers, rank-bm25, datasketch, etc.)
+# will be added in a later stage once the corpus is prepared.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Core utilities
+# ---------------------------------------------------------------------------
+tqdm==4.67.1              # Progress bars for corpus processing loops
+python-dotenv==1.1.0      # Load .env config (API keys, paths)
+
+# ---------------------------------------------------------------------------
+# Data handling & serialisation
+# ---------------------------------------------------------------------------
+numpy==2.5.3              # Numerical arrays; used by chunker length stats
+pandas==2.2.3             # Tabular results, evaluation DataFrames
+jsonlines==4.0.0          # Streaming JSONL read/write for chunks
+pydantic==2.13.5          # Data validation for Chunk / config schemas (installed as spacy dependency)
+
+# ---------------------------------------------------------------------------
+# Text processing & NLP utilities
+# ---------------------------------------------------------------------------
+nltk==3.9.1               # Sentence tokenisation, stopwords (chunker)
+spacy==3.8.16             # Optional: sentence segmentation alternative
+regex==2024.11.6          # More powerful regex for cleaning patterns
+
+# ---------------------------------------------------------------------------
+# PDF / document ingestion (for data/raw/ → data/processed/)
+# ---------------------------------------------------------------------------
+pypdf==5.4.0              # Pure-Python PDF text extraction
+beautifulsoup4==4.13.4    # HTML parsing for web-scraped documents
+lxml==5.4.0               # Fast HTML/XML parser backend for bs4
+
+# ---------------------------------------------------------------------------
+# Notebook support
+# ---------------------------------------------------------------------------
+jupyter==1.1.1            # Notebook server
+ipykernel==6.29.5         # Jupyter kernel for the venv
+matplotlib==3.10.1        # Plotting in notebooks
+seaborn==0.13.2           # Statistical visualisation
+
+# ---------------------------------------------------------------------------
+# Development & code quality
+# ---------------------------------------------------------------------------
+black==25.1.0             # Code formatter
+isort==6.0.1              # Import sorter
+flake8==7.2.0             # Linter
+pytest==8.3.5             # Test runner (for future unit tests)
