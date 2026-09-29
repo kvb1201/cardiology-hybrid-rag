@@ -1,0 +1,78 @@
+# Hypertension: Diagnosis and Treatment
+Hypertension (HTN) affects more than 1.28 billion adults worldwide and is
+the leading modifiable risk factor for cardiovascular disease (CVD),
+stroke, and chronic kidney disease. Despite effective treatments, only
+approximately 20% of hypertensive patients achieve adequate blood pressure
+(BP) control globally.
+## Definition and Classification
+Blood pressure classification (ACC/AHA 2017 guidelines):
+- Normal: systolic <120 mmHg and diastolic <80 mmHg
+- Elevated: systolic 120-129 mmHg and diastolic <80 mmHg
+- Stage 1 HTN: systolic 130-139 mmHg or diastolic 80-89 mmHg
+- Stage 2 HTN: systolic >=140 mmHg or diastolic >=90 mmHg
+- Hypertensive crisis: systolic >180 mmHg and/or diastolic >120 mmHg
+ESC/ESH 2018 guidelines define hypertension as office BP >=140/90 mmHg.
+## Diagnosis and Measurement
+
+- Patient seated and rested for 5 minutes
+- Average of at least 2 readings taken 1-2 minutes apart
+- Calibrated, validated sphygmomanometer with appropriate cuff size
+- Confirm diagnosis with out-of-office measurements (ABPM or HBPM)
+Ambulatory blood pressure monitoring (ABPM) is the gold standard,
+capturing daytime average, nocturnal dipping, and BP variability.
+White-coat hypertension (office BP elevated, ABPM normal) occurs in
+15-30% of patients. Masked hypertension (normal office BP, elevated ABPM)
+carries the same cardiovascular risk as sustained hypertension.
+## Secondary Hypertension
+Secondary causes should be considered in patients with resistant
+hypertension, age <30 years, or sudden onset. Common causes:
+- Renovascular hypertension (renal artery stenosis)
+- Primary aldosteronism (Conn syndrome): most common secondary cause (~10%)
+- Phaeochromocytoma / paraganglioma
+- Obstructive sleep apnoea (OSA)
+- Cushing syndrome
+- Hypothyroidism / hyperthyroidism
+- Coarctation of the aorta (young patients)
+## Cardiovascular Risk Assessment
+Total cardiovascular risk should guide treatment intensity. Risk calculators
+include SCORE2 (European) and ASCVD Pooled Cohort Equations (US).
+High-risk conditions warranting immediate treatment regardless of BP stage:
+- Established CVD (coronary artery disease, stroke, PAD)
+- Diabetes mellitus
+- Chronic kidney disease (CKD) stage >=3
+- LVEF <40%
+## Treatment
+### Lifestyle Modification
+Non-pharmacological interventions are recommended for all patients:
+- DASH diet: reduces systolic BP by 8-14 mmHg
+- Sodium restriction (<2.3 g/day): reduces systolic BP by 5-6 mmHg
+- Weight loss: 1 mmHg reduction per 1 kg weight loss
+- Aerobic exercise (>=150 min/week moderate intensity)
+- Alcohol limitation (<=14 units/week)
+- Smoking cessation (does not lower BP but reduces overall CVD risk)
+### Pharmacological Treatment
+First-line antihypertensive agents (all reduce major cardiovascular events):
+- Thiazide/thiazide-like diuretics: chlorthalidone 12.5-25 mg/day, indapamide 1.5-2.5 mg/day
+- ACE inhibitors: ramipril 2.5-10 mg/day, perindopril 4-8 mg/day, enalapril 5-40 mg/day
+- Angiotensin receptor blockers (ARBs): losartan 25-100 mg/day, olmesartan 10-40 mg/day
+- Dihydropyridine calcium channel blockers (CCBs): amlodipine 2.5-10 mg/day, felodipine 2.5-10 mg/day
+Combination therapy is required in most patients to achieve BP targets.
+Single-pill combinations (SPCs) improve adherence and are preferred.
+Triple therapy (RAS blocker + CCB + diuretic) achieves control in most patients.
+Resistant hypertension (BP uncontrolled on 3+ agents including a diuretic
+at optimal doses) should prompt spironolactone 25-50 mg/day as a fourth agent,
+or referral for specialist evaluation and investigation of secondary causes.
+### BP Targets
+
+with diabetes, CKD, CVD, or high CV risk.
+ESC/ESH 2018: initial target <140/90 mmHg; if tolerated, consider
+<130/80 mmHg in most patients aged <65 years.
+## Hypertensive Emergency
+Hypertensive emergency: severe BP elevation (>180/120 mmHg) with acute
+target organ damage (TOD). Examples include hypertensive encephalopathy,
+acute coronary syndrome, acute aortic dissection, acute HF with pulmonary
+oedema, and hypertensive nephrosclerosis.
+Management: IV antihypertensives in ICU setting. Reduce mean arterial
+pressure (MAP) by no more than 25% in the first hour, then to 160/100-110
+mmHg over 2-6 hours (except aortic dissection: target <120/80 mmHg urgently).
+Agents: IV labetalol, nicardipine, sodium nitroprusside, clevidipine.
