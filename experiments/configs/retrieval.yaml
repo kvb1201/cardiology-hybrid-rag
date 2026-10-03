@@ -6,7 +6,7 @@
 # a frozen evaluation set (qrels) is in place.  Record any parameter
 # changes as a new named experiment rather than editing defaults.
 #
-# Stage implemented: 2A (BM25 baseline)
+# Stage implemented: 2A (BM25 baseline) + 2C (LSH baseline)
 
 # ── Corpus ────────────────────────────────────────────────────────────────
 corpus:
@@ -24,11 +24,16 @@ bm25:
   index_filename: "bm25_index.pkl"
   # tokenizer: lowercase + alphanumeric+hyphen filter; no stemming
 
-# ── LSH / MinHash (Stage 2B — not yet implemented) ────────────────────────
+# ── LSH / MinHash (Stage 2C baseline — do not tune) ───────────────────────
 lsh:
-  num_perm: 128
-  threshold: 0.5
+  shingle_size: 3                   # word k-gram size (word 3-grams)
+  num_perm: 128                     # MinHash permutations (accuracy vs speed)
+  threshold: 0.3                    # approximate Jaccard threshold for candidates
   index_path: "indexes/lsh"
+  index_filename: "lsh_index.pkl"
+  # Shingling: lowercase + alphanumeric-hyphen tokens (same as BM25 tokenizer)
+  # Score: exact Jaccard similarity over shingle sets (NOT comparable to BM25 scores)
+  # Note: threshold=0.3 is initial baseline. Lower = more candidates. Do not tune.
 
 # ── Dense / FAISS (Stage 2C — not yet implemented) ────────────────────────
 dense:
