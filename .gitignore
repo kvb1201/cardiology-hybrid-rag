@@ -1,2 +1,34 @@
 .vscode
 .DS_Store
+
+# macOS metadata
+**/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ── Corpus V1: source PDFs are gitignored (copyright / large binaries) ──────
+# The manifest (source_manifest.csv) and checksums (source_checksums.csv)
+# ARE tracked. The actual PDF files are NOT.
+data/raw/*.pdf
+data/raw/*.PDF
+
+# Keep generated data out of git too (large, reproducible)
+data/processed/
+data/chunks/
+
+# Indexes (generated, large)
+indexes/bm25/
+indexes/lsh/
+indexes/faiss/
+
+# Experiment results
+experiments/results/
