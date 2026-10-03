@@ -1,0 +1,66 @@
+query_id,query_text,topic,query_type
+Q001,What pharmacological treatments are recommended after myocardial infarction?,myocardial_infarction,treatment
+Q002,How is STEMI differentiated from NSTEMI in clinical presentation and ECG?,myocardial_infarction,diagnostic_criteria
+Q003,What are the mechanisms of plaque rupture and thrombus formation in acute MI?,myocardial_infarction,mechanism
+Q004,What is periprocedural myocardial infarction and how is it defined?,myocardial_infarction,diagnostic_criteria
+Q005,What mechanical circulatory support devices are used in cardiogenic shock after MI?,myocardial_infarction,treatment
+Q006,What are the complications of acute myocardial infarction?,myocardial_infarction,complication
+Q007,What is the role of primary PCI versus fibrinolysis in STEMI reperfusion?,myocardial_infarction,treatment
+Q008,How does ischaemic cardiomyopathy develop after myocardial infarction?,myocardial_infarction,mechanism
+Q009,What is the role of coronary physiology and FFR in guiding PCI decisions?,coronary_artery_disease,diagnostic_criteria
+Q010,What are the risk factors for coronary artery disease?,coronary_artery_disease,risk_factors
+Q011,How is coronary CT angiography used in the diagnosis of stable chest pain?,coronary_artery_disease,diagnostic_criteria
+Q012,What are the secondary prevention strategies after coronary artery disease?,coronary_artery_disease,treatment
+Q013,What revascularisation strategy is preferred in multivessel coronary disease: PCI or CABG?,coronary_artery_disease,treatment
+Q014,What novel biomarkers and imaging techniques improve CAD risk stratification?,coronary_artery_disease,diagnostic_criteria
+Q015,What anti-inflammatory therapies reduce cardiovascular events in CAD?,coronary_artery_disease,treatment
+Q016,How is non-obstructive coronary artery disease (ANOCA/INOCA) managed?,coronary_artery_disease,treatment
+Q017,What are the four pillars of guideline-directed medical therapy for HFrEF?,heart_failure,treatment
+Q018,How do SGLT2 inhibitors improve outcomes in heart failure?,heart_failure,mechanism
+Q019,What are the diagnostic criteria and management of heart failure with preserved ejection fraction?,heart_failure,diagnostic_criteria
+Q020,What risk prediction models exist for heart failure with preserved ejection fraction?,heart_failure,prognosis
+Q021,How do international heart failure guidelines (ACC/AHA vs ESC) differ in their recommendations?,heart_failure,treatment
+Q022,What is the role of iron supplementation in heart failure?,heart_failure,treatment
+Q023,How is diastolic dysfunction assessed and what are its clinical implications?,heart_failure,diagnostic_criteria
+Q024,What are the mechanisms of diastolic heart failure?,heart_failure,mechanism
+Q025,"What devices are used in heart failure management: ICD, CRT, and MCS?",heart_failure,treatment
+Q026,What novel pharmacological agents are being investigated for heart failure?,heart_failure,treatment
+Q027,What are the risk factors for developing atrial fibrillation?,atrial_fibrillation_arrhythmia,risk_factors
+Q028,How does catheter ablation compare with antiarrhythmic drug therapy for atrial fibrillation?,atrial_fibrillation_arrhythmia,treatment
+Q029,What factors predict successful outcomes after AF ablation?,atrial_fibrillation_arrhythmia,prognosis
+Q030,What is the role of anticoagulation in atrial fibrillation and stroke prevention?,atrial_fibrillation_arrhythmia,treatment
+Q031,How is atrial fibrillation managed in patients with chronic kidney disease?,atrial_fibrillation_arrhythmia,treatment
+Q032,What is atrial cardiomyopathy and how is it diagnosed?,atrial_fibrillation_arrhythmia,diagnostic_criteria
+Q033,What structural and clinical factors influence atrial fibrillation ablation outcomes?,atrial_fibrillation_arrhythmia,prognosis
+Q034,What are the rate-control versus rhythm-control strategies in atrial fibrillation?,atrial_fibrillation_arrhythmia,treatment
+Q035,"What is the mechanism of atrial fibrillation: triggers, substrate, and perpetuation?",atrial_fibrillation_arrhythmia,mechanism
+Q036,How does atrial fibrillation interact with heart failure in terms of management?,atrial_fibrillation_arrhythmia,treatment
+Q037,What are the mechanisms of hypertensive heart disease?,hypertension,mechanism
+Q038,How is hypertensive heart disease diagnosed using imaging?,hypertension,diagnostic_criteria
+Q039,What are the treatment targets and pharmacological options for hypertensive heart disease?,hypertension,treatment
+Q040,What is the relationship between hypertension and left ventricular hypertrophy?,hypertension,mechanism
+Q041,How can machine learning improve hypertension diagnosis and management?,hypertension,diagnostic_criteria
+Q042,What is the global burden of hypertension and its cardiovascular consequences?,hypertension,risk_factors
+Q043,How does hypertension contribute to diastolic heart failure?,hypertension,mechanism
+Q044,What is the mechanism of action and efficacy of statins in dyslipidemia?,dyslipidemia,mechanism
+Q045,What are the roles of PCSK9 inhibitors and novel lipid-lowering therapies?,dyslipidemia,treatment
+Q046,What are the LDL-cholesterol treatment targets in high-risk cardiovascular patients?,dyslipidemia,treatment
+Q047,How are fibrates and omega-3 fatty acids used in hypertriglyceridaemia?,dyslipidemia,treatment
+Q048,What is the pharmacological management of familial hypercholesterolaemia?,dyslipidemia,treatment
+Q049,What is the global burden and epidemiology of valvular heart disease?,valvular_heart_disease,risk_factors
+Q050,What are the indications for transcatheter aortic valve replacement (TAVI)?,valvular_heart_disease,treatment
+Q051,How is mitral regurgitation assessed and managed?,valvular_heart_disease,treatment
+Q052,What is the role of echocardiography in valvular heart disease assessment?,valvular_heart_disease,diagnostic_criteria
+Q053,What are the trends in valvular heart disease management including transcatheter interventions?,valvular_heart_disease,treatment
+Q054,What is the genetic basis of dilated cardiomyopathy?,cardiomyopathy,mechanism
+Q055,How is cardiac MRI used in cardiomyopathy diagnosis and risk stratification?,cardiomyopathy,diagnostic_criteria
+Q056,What are the imaging modalities used in cardiomyopathy evaluation?,cardiomyopathy,diagnostic_criteria
+Q057,What are the risk factors for sudden cardiac death in hypertrophic cardiomyopathy?,cardiomyopathy,prognosis
+Q058,What genetic testing is recommended in cardiomyopathy management?,cardiomyopathy,diagnostic_criteria
+Q059,What is arrhythmogenic cardiomyopathy and how is it diagnosed?,cardiomyopathy,diagnostic_criteria
+Q060,How does dilated cardiomyopathy progress and what are its outcomes?,cardiomyopathy,prognosis
+Q061,What strategies does the World Heart Federation recommend for secondary prevention of CVD?,cardiovascular_prevention,treatment
+Q062,How do machine learning and electronic health records improve cardiovascular risk prediction?,cardiovascular_prevention,diagnostic_criteria
+Q063,What are the barriers to medication adherence in secondary cardiovascular prevention?,cardiovascular_prevention,prognosis
+Q064,What interventions improve cardiovascular prevention in low- and middle-income countries?,cardiovascular_prevention,treatment
+Q065,What are the primary prevention risk scores and how are they used in clinical practice?,cardiovascular_prevention,diagnostic_criteria

@@ -1,0 +1,86 @@
+# evaluation.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Retrieval evaluation configuration for the cardiology hybrid RAG project.
+#
+# These settings define the evaluation protocol used for ALL retrieval methods:
+# BM25, MinHash+LSH, Dense+FAISS, Hybrid RRF, Cross-encoder reranker.
+#
+# DO NOT change these values mid-experiment. Any change constitutes a new
+# evaluation protocol and requires a new frozen qrels file.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Evaluation dataset ───────────────────────────────────────────────────────
+dataset:
+  queries_path:  "data/evaluation/queries.csv"
+  qrels_path:    "data/evaluation/qrels.csv"
+  n_queries:     65
+  n_qrels:       828
+  topics:
+    - myocardial_infarction        # 8 queries
+    - coronary_artery_disease      # 8 queries
+    - heart_failure                # 10 queries
+    - atrial_fibrillation_arrhythmia  # 10 queries
+    - hypertension                 # 7 queries
+    - dyslipidemia                 # 5 queries
+    - valvular_heart_disease       # 5 queries
+    - cardiomyopathy               # 7 queries
+    - cardiovascular_prevention    # 5 queries
+
+# ── Relevance scale ───────────────────────────────────────────────────────────
+relevance:
+  not_relevant:       0
+  partially_relevant: 1
+  highly_relevant:    2
+  # For binary metrics (Precision@k, Recall@k, MRR), a chunk is considered
+  # relevant if its grade >= relevance_threshold
+  relevance_threshold: 1
+
+# ── Cut-off values for ranked metrics ────────────────────────────────────────
+k_values: [5, 10, 20]
+
+# ── Metrics to compute ───────────────────────────────────────────────────────
+# All implemented in src/evaluation/retrieval_metrics.py
+metrics:
+  - precision_at_k   # computed at each k in k_values
+  - recall_at_k      # computed at each k in k_values
+  - mrr              # Mean Reciprocal Rank (full ranked list)
+  - map              # Mean Average Precision (full ranked list)
+  - ndcg_at_k        # computed at each k in k_values (supports graded relevance)
+
+# Primary metric for overall comparison
+primary_metric: "ndcg_at_10"
+
+# ── Per-retriever top-k retrieval limits ─────────────────────────────────────
+retrieval:
+  top_k_for_evaluation: 20   # retrieve top-20 before computing metrics at 5/10/20
+  # All retrievers must retrieve at least top_k_for_evaluation results per query
+
+# ── Ablation study configuration ─────────────────────────────────────────────
+ablation:
+  systems:
+    - name: "bm25_baseline"
+      description: "BM25 only (k1=1.5, b=0.75)"
+    - name: "lsh_baseline"
+      description: "MinHash-LSH only (Stage 2B)"
+    - name: "dense_baseline"
+      description: "Dense FAISS only (Stage 2C)"
+    - name: "hybrid_bm25_dense"
+      description: "BM25 + Dense, RRF k=60 (Stage 2D)"
+    - name: "hybrid_all"
+      description: "BM25 + LSH + Dense, RRF k=60 (Stage 2D)"
+    - name: "hybrid_reranked"
+      description: "Hybrid + Cross-encoder reranker (Stage 3)"
+
+# ── Results output ────────────────────────────────────────────────────────────
+results:
+  output_dir: "experiments/results"
+  save_per_query:   true    # save per-query metric breakdown
+  save_per_topic:   true    # save topic-level aggregation
+  save_raw_results: true    # save raw ranked lists for error analysis
+
+# ── Statistical testing ───────────────────────────────────────────────────────
+# (to be used when comparing two systems)
+stats:
+  test:      "wilcoxon"   # Wilcoxon signed-rank test on per-query scores
+  alpha:     0.05
+  bonferroni: true        # apply Bonferroni correction for multiple comparisons
