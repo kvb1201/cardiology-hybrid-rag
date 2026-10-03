@@ -6,7 +6,7 @@
 # a frozen evaluation set (qrels) is in place.  Record any parameter
 # changes as a new named experiment rather than editing defaults.
 #
-# Stage implemented: 2A (BM25 baseline) + 2C (LSH baseline) + 2D (Dense baseline)
+# Stage implemented: 2A (BM25) + 2C (LSH) + 2D (Dense) + 2E (Hybrid RRF)
 
 # ── Corpus ────────────────────────────────────────────────────────────────
 corpus:
@@ -49,13 +49,15 @@ dense:
   # Note: all-MiniLM-L6-v2 chosen for competitive quality, small size (90 MB),
   # and reproducibility. No fine-tuning applied. Zero-shot baseline.
 
-# ── Hybrid RRF (Stage 2D — not yet implemented) ───────────────────────────
+# ── Hybrid RRF (Stage 2E — implemented) ──────────────────────────────────
 hybrid:
-  rrf_k: 60                         # RRF smoothing constant (Cormack et al. 2009)
-  weights:                          # per-retriever weights for weighted RRF
-    bm25: 1.0
-    lsh: 1.0
-    dense: 1.0
+  method: rrf
+  rrf_k: 60                         # FIXED — do not tune on qrels (Cormack et al. 2009)
+  candidate_depth: 20               # candidates each retriever contributes per query
+  # Systems evaluated:
+  #   system_a: BM25 + Dense
+  #   system_b: BM25 + Dense + LSH
+  # rrf_k=60 is frozen before evaluation. Parameter changes require a new experiment name.
 
 # ── Retrieval top-k values used in evaluation ────────────────────────────
 evaluation:

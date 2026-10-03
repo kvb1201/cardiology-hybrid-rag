@@ -9,7 +9,7 @@ Stage implementation status
 Stage 2A  BM25Retriever           ✓ implemented
 Stage 2C  LSHRetriever            ✓ implemented
 Stage 2D  DenseRetriever (FAISS)  ✓ implemented
-Stage 2E  HybridRetriever (RRF)   stub
+Stage 2E  HybridRetriever (RRF)   ✓ implemented
 
 Public API
 ----------
@@ -17,12 +17,14 @@ Public API
     from src.retrieval import BM25Retriever, tokenize
     from src.retrieval import LSHRetriever, shingle
     from src.retrieval import DenseRetriever
+    from src.retrieval import HybridRetriever, rrf_fuse
 """
 
-from src.retrieval.base  import BaseRetriever, RetrievalResult
-from src.retrieval.bm25  import BM25Retriever, tokenize
-from src.retrieval.lsh   import LSHRetriever, shingle
-from src.retrieval.dense import DenseRetriever
+from src.retrieval.base   import BaseRetriever, RetrievalResult
+from src.retrieval.bm25   import BM25Retriever, tokenize
+from src.retrieval.lsh    import LSHRetriever, shingle
+from src.retrieval.dense  import DenseRetriever
+from src.retrieval.hybrid import HybridRetriever, rrf_fuse
 
 __all__ = [
     "BaseRetriever",
@@ -32,4 +34,6 @@ __all__ = [
     "LSHRetriever",
     "shingle",
     "DenseRetriever",
+    "HybridRetriever",
+    "rrf_fuse",
 ]
