@@ -6,7 +6,7 @@
 # a frozen evaluation set (qrels) is in place.  Record any parameter
 # changes as a new named experiment rather than editing defaults.
 #
-# Stage implemented: 2A (BM25 baseline) + 2C (LSH baseline)
+# Stage implemented: 2A (BM25 baseline) + 2C (LSH baseline) + 2D (Dense baseline)
 
 # ── Corpus ────────────────────────────────────────────────────────────────
 corpus:
@@ -35,11 +35,19 @@ lsh:
   # Score: exact Jaccard similarity over shingle sets (NOT comparable to BM25 scores)
   # Note: threshold=0.3 is initial baseline. Lower = more candidates. Do not tune.
 
-# ── Dense / FAISS (Stage 2C — not yet implemented) ────────────────────────
+# ── Dense / FAISS (Stage 2D baseline — do not tune) ───────────────────────
 dense:
   model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  model_version: "as-downloaded via sentence-transformers 3.4.1"
+  embedding_dim: 384
+  normalize_embeddings: true        # L2-normalise → inner product = cosine
+  similarity_metric: "inner_product (cosine on unit vectors)"
+  faiss_index_type: "IndexFlatIP"   # exact search — deterministic, no approximation
   batch_size: 64
   index_path: "indexes/faiss"
+  index_filename: "dense_index.faiss"
+  # Note: all-MiniLM-L6-v2 chosen for competitive quality, small size (90 MB),
+  # and reproducibility. No fine-tuning applied. Zero-shot baseline.
 
 # ── Hybrid RRF (Stage 2D — not yet implemented) ───────────────────────────
 hybrid:

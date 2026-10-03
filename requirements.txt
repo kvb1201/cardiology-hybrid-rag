@@ -48,6 +48,8 @@ seaborn==0.13.2           # Statistical visualisation
 # ---------------------------------------------------------------------------
 rank-bm25==0.2.2          # BM25Okapi implementation for sparse retrieval baseline
 datasketch==1.6.5         # MinHash + LSH implementation for approximate retrieval baseline
+sentence-transformers==3.4.1  # Sentence embeddings for dense retrieval baseline
+faiss-cpu==1.15.1         # FAISS exact nearest-neighbour search (IndexFlatIP)
 
 # ---------------------------------------------------------------------------
 # Development & code quality
