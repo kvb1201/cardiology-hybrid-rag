@@ -1,0 +1,54 @@
+# retrieval.yaml
+# ──────────────
+# Centralised configuration for all retrieval experiments.
+#
+# IMPORTANT: do not tune these values based on retrieval results until
+# a frozen evaluation set (qrels) is in place.  Record any parameter
+# changes as a new named experiment rather than editing defaults.
+#
+# Stage implemented: 2A (BM25 baseline)
+
+# ── Corpus ────────────────────────────────────────────────────────────────
+corpus:
+  chunks_path: "data/chunks/chunks.jsonl"
+  n_chunks: 1142                    # frozen Corpus V1
+  chunk_size_tokens: 256
+  overlap_tokens: 32
+  strategy: "sentence"
+
+# ── BM25 (Stage 2A baseline — do not tune) ───────────────────────────────
+bm25:
+  k1: 1.5                           # term-frequency saturation
+  b: 0.75                           # document-length normalisation
+  index_path: "indexes/bm25"
+  index_filename: "bm25_index.pkl"
+  # tokenizer: lowercase + alphanumeric+hyphen filter; no stemming
+
+# ── LSH / MinHash (Stage 2B — not yet implemented) ────────────────────────
+lsh:
+  num_perm: 128
+  threshold: 0.5
+  index_path: "indexes/lsh"
+
+# ── Dense / FAISS (Stage 2C — not yet implemented) ────────────────────────
+dense:
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 64
+  index_path: "indexes/faiss"
+
+# ── Hybrid RRF (Stage 2D — not yet implemented) ───────────────────────────
+hybrid:
+  rrf_k: 60                         # RRF smoothing constant (Cormack et al. 2009)
+  weights:                          # per-retriever weights for weighted RRF
+    bm25: 1.0
+    lsh: 1.0
+    dense: 1.0
+
+# ── Retrieval top-k values used in evaluation ────────────────────────────
+evaluation:
+  top_k_values: [5, 10, 20]
+  default_top_k: 10
+  relevance_levels:
+    not_relevant: 0
+    partially_relevant: 1
+    highly_relevant: 2

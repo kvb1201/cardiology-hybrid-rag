@@ -44,6 +44,11 @@ matplotlib==3.10.1        # Plotting in notebooks
 seaborn==0.13.2           # Statistical visualisation
 
 # ---------------------------------------------------------------------------
+# Retrieval — Stage 2A
+# ---------------------------------------------------------------------------
+rank-bm25==0.2.2          # BM25Okapi implementation for sparse retrieval baseline
+
+# ---------------------------------------------------------------------------
 # Development & code quality
 # ---------------------------------------------------------------------------
 black==25.1.0             # Code formatter

@@ -1,0 +1,11 @@
+query_id,query_text,topic,notes
+Q001,"What are the pharmacological treatments for heart failure with reduced ejection fraction?",heart_failure,Template — replace with real judged queries
+Q002,"What are the main risk factors for atrial fibrillation?",atrial_fibrillation_arrhythmia,Template — replace with real judged queries
+Q003,"How is hypertensive heart disease diagnosed and managed?",hypertension,Template — replace with real judged queries
+Q004,"What are the mechanisms of myocardial infarction and plaque rupture?",myocardial_infarction,Template — replace with real judged queries
+Q005,"What imaging modalities are used in the diagnosis of cardiomyopathy?",cardiomyopathy,Template — replace with real judged queries
+Q006,"What is the role of SGLT-2 inhibitors in heart failure management?",heart_failure,Template — replace with real judged queries
+Q007,"How does catheter ablation compare to medical therapy in atrial fibrillation?",atrial_fibrillation_arrhythmia,Template — replace with real judged queries
+Q008,"What are the secondary prevention strategies after coronary artery disease?",coronary_artery_disease,Template — replace with real judged queries
+Q009,"What are the genetic causes of dilated cardiomyopathy?",cardiomyopathy,Template — replace with real judged queries
+Q010,"How is dyslipidemia managed pharmacologically?",dyslipidemia,Template — replace with real judged queries

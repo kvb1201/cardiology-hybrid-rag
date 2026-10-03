@@ -46,16 +46,17 @@ cardiology-hybrid-rag/
 │   │   ├── cleaner.py          # 5-stage text cleaning pipeline
 │   │   └── chunker.py          # Chunking strategies + Chunk dataclass + JSONL I/O
 │   ├── retrieval/
-│   │   ├── bm25.py             # BM25Retriever  [stub]
-│   │   ├── lsh.py              # LSHRetriever (MinHash)  [stub]
-│   │   ├── dense.py            # DenseRetriever (FAISS)  [stub]
-│   │   └── hybrid.py           # HybridRetriever + reciprocal_rank_fusion()  [stub]
+│   │   ├── base.py             # BaseRetriever ABC + RetrievalResult dataclass  [implemented]
+│   │   ├── bm25.py             # BM25Retriever (rank-bm25, k1=1.5, b=0.75)  [implemented]
+│   │   ├── lsh.py              # LSHRetriever (MinHash)  [stub — Stage 2B]
+│   │   ├── dense.py            # DenseRetriever (FAISS)  [stub — Stage 2C]
+│   │   └── hybrid.py           # HybridRetriever + reciprocal_rank_fusion()  [stub — Stage 2D]
 │   ├── reranking/
 │   │   └── reranker.py         # CrossEncoderReranker  [stub]
 │   ├── rag/
 │   │   └── pipeline.py         # RAGPipeline  [stub]
 │   └── evaluation/
-│       ├── retrieval_metrics.py    # MRR, MAP, NDCG@k, Recall@k, Precision@k  [stub]
+│       ├── retrieval_metrics.py    # Precision@k, Recall@k, MRR, MAP, NDCG@k  [implemented]
 │       └── diagnostic_metrics.py  # EM, F1, Faithfulness, Clinical accuracy  [stub]
 │
 ├── notebooks/
@@ -75,10 +76,12 @@ cardiology-hybrid-rag/
 │   └── run_evaluation.py   # CLI: run retrieval + diagnostic evaluation  [stub]
 │
 ├── tests/
-│   ├── conftest.py             # Shared fixtures (sample files, text constants)
-│   ├── test_cleaner.py         # 45 tests across 8 test classes
-│   ├── test_chunker.py         # 46 tests across 8 test classes
-│   └── test_ingestion.py       # 38 tests across 6 test classes
+│   ├── conftest.py                 # Shared fixtures (sample files, text constants)
+│   ├── test_cleaner.py             # 45 tests — cleaning pipeline
+│   ├── test_chunker.py             # 46 tests — chunking strategies + JSONL I/O
+│   ├── test_ingestion.py           # 38 tests — loaders + factory
+│   ├── test_bm25.py                # 37 tests — tokenizer + BM25Retriever
+│   └── test_retrieval_metrics.py   # 49 tests — Precision@k, Recall@k, MRR, MAP, NDCG@k
 │
 ├── requirements.txt
 ├── README.md
@@ -196,7 +199,45 @@ Each line of `data/chunks/chunks.jsonl` is a flat JSON object:
 | `chunk_index` | 0-based position within this document |
 | `total_chunks` | Total chunk count for this document |
 
-### 5. Build indexes *(not yet implemented)*
+### 5. Build the BM25 index
+
+Build the BM25 sparse retrieval index from the frozen corpus:
+
+```bash
+python - << 'EOF'
+from src.preprocessing.chunker import load_chunks
+from src.retrieval.bm25 import BM25Retriever
+
+chunks = load_chunks("data/chunks/chunks.jsonl")
+r = BM25Retriever(index_path="indexes/bm25", k1=1.5, b=0.75)
+r.build(chunks)
+r.save()
+print(f"Index built: {r.corpus_size} chunks → indexes/bm25/bm25_index.pkl")
+EOF
+```
+
+Or use the scripts CLI once `build_indexes.py` is fully implemented:
+
+```bash
+python scripts/build_indexes.py --chunk-file data/chunks/chunks.jsonl --build-bm25
+```
+
+### 6. Query the BM25 index
+
+```python
+from src.retrieval.bm25 import BM25Retriever
+
+r = BM25Retriever(index_path="indexes/bm25")
+r.load()
+
+results = r.search("pharmacological treatment of heart failure", top_k=5)
+for res in results:
+    print(f"Rank {res.rank}  score={res.score:.3f}  {res.chunk_id}  {res.text[:80]}...")
+```
+
+Each result contains: `rank`, `chunk_id`, `doc_id`, `score`, `text`, `metadata`.
+
+### 7. Build indexes *(LSH + Dense — not yet implemented)*
 
 ```bash
 python scripts/build_indexes.py \
@@ -204,7 +245,7 @@ python scripts/build_indexes.py \
     --build-bm25 --build-lsh --build-dense
 ```
 
-### 6. Run evaluation *(not yet implemented)*
+### 8. Run evaluation *(not yet implemented — qrels required)*
 
 ```bash
 python scripts/run_evaluation.py \
@@ -216,7 +257,82 @@ python scripts/run_evaluation.py \
 
 ---
 
-## Cleaning Pipeline
+## BM25 Retrieval (Stage 2A)
+
+### How BM25 works
+
+BM25 (Best Match 25) is a probabilistic sparse retrieval model that ranks chunks
+by term-frequency/inverse-document-frequency scores.  For a query token `t` and
+chunk `d`:
+
+```
+score(t,d) = IDF(t) × (tf(t,d) × (k1 + 1)) / (tf(t,d) + k1 × (1 - b + b × |d|/avgdl))
+```
+
+where `k1` saturates term frequency and `b` normalises for chunk length.
+
+### Tokenizer
+
+Function `src.retrieval.bm25.tokenize(text)`:
+- Lowercase the input
+- Extract alphanumeric runs that contain at least one letter (preserves `SGLT-2`, `HFrEF`, `CHA2DS2-VASc`, `INR`, `mg/kg`)
+- **No stemming, no lemmatisation, no stopword removal**
+- Deterministic and side-effect-free
+
+```python
+from src.retrieval.bm25 import tokenize
+tokenize("SGLT-2 inhibitor reduces HF hospitalisation by 25%.")
+# → ['sglt-2', 'inhibitor', 'reduces', 'hf', 'hospitalisation', 'by']
+```
+
+### Baseline parameters
+
+| Parameter | Value | Description |
+|---|---|---|
+| `k1` | 1.5 | Term-frequency saturation |
+| `b` | 0.75 | Document-length normalisation |
+
+These are the standard BM25Okapi defaults.  **Do not tune until a frozen evaluation set (qrels) exists.**  Parameters are configurable in `experiments/configs/retrieval.yaml`.
+
+### Index facts (Corpus V1)
+
+| Metric | Value |
+|---|---|
+| Indexed chunks | 1,142 |
+| Build time | 0.124 s |
+| Index file | `indexes/bm25/bm25_index.pkl` |
+| Index size | 4.5 MB |
+| Implementation | `rank-bm25==0.2.2` BM25Okapi |
+
+### Smoke-test results (sanity check only — not scientific evaluation)
+
+| Query | Rank 1 chunk | Doc |
+|---|---|---|
+| "pharmacological treatments for heart failure" | HF02-0000 | HF02 |
+| "risk factors for atrial fibrillation" | AF04-0030 | AF04 |
+| "hypertensive heart disease diagnosed" | HTN01-0021 | HTN01 |
+| "mechanisms of myocardial infarction" | MI03-0000 | MI03 |
+| "imaging modalities in cardiomyopathy" | CMY02-0003 | CMY02 |
+
+All top-1 results are topically correct.  Scientific evaluation requires frozen relevance judgments (qrels) — see `data/evaluation/qrels_schema.md`.
+
+### Retrieval metrics
+
+`src/evaluation/retrieval_metrics.py` implements:
+
+| Metric | Function |
+|---|---|
+| Precision@k | `precision_at_k(retrieved, relevant, k)` |
+| Recall@k | `recall_at_k(retrieved, relevant, k)` |
+| Reciprocal Rank | `reciprocal_rank(retrieved, relevant)` |
+| Mean Reciprocal Rank | `mean_reciprocal_rank(all_retrieved, all_relevant)` |
+| Average Precision | `average_precision(retrieved, relevant)` |
+| Mean Average Precision | `mean_average_precision(all_retrieved, all_relevant)` |
+| NDCG@k | `ndcg_at_k(retrieved, relevant, k, graded_relevance=None)` |
+
+All functions accept generic Python types and support both binary and graded relevance (0/1/2).  They are retriever-agnostic and will evaluate BM25, LSH, Dense, Hybrid, and Reranker with identical code.
+
+---
 
 `src/preprocessing/cleaner.py` applies these stages in order:
 
@@ -242,22 +358,23 @@ python -m pytest tests/test_chunker.py -v
 python -m pytest tests/test_ingestion.py -v
 ```
 
-Current status: **129 / 129 tests passing**.
+Current status: **215 / 215 tests passing**.
 
 ---
 
 ## Development Stages
 
 - [x] **Stage 0** — Repository scaffold
-- [x] **Stage 1** — Ingestion + cleaning + chunking pipeline *(current)*
-- [ ] **Stage 2** — BM25 retrieval
-- [ ] **Stage 3** — MinHash-LSH retrieval
-- [ ] **Stage 4** — Dense (FAISS) retrieval
-- [ ] **Stage 5** — Hybrid RRF fusion
-- [ ] **Stage 6** — Cross-encoder reranking
-- [ ] **Stage 7** — RAG pipeline + LLM integration
-- [ ] **Stage 8** — Retrieval evaluation
-- [ ] **Stage 9** — Downstream diagnostic evaluation
+- [x] **Stage 1** — Ingestion + cleaning + chunking pipeline
+- [x] **Stage 2A** — BM25 sparse retrieval baseline + retrieval metrics *(current)*
+- [ ] **Stage 2B** — MinHash-LSH retrieval
+- [ ] **Stage 2C** — Dense (FAISS) retrieval
+- [ ] **Stage 2D** — Hybrid RRF fusion
+- [ ] **Stage 3** — Cross-encoder reranking
+- [ ] **Stage 4** — RAG pipeline + LLM integration
+- [ ] **Stage 5** — Retrieval evaluation (requires frozen qrels)
+- [ ] **Stage 6** — Downstream diagnostic evaluation
+- [ ] **Stage 7** — Ablation study + error analysis
 - [ ] **Stage 10** — Ablation study + error analysis
 
 ---
