@@ -1,0 +1,52 @@
+# generation.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Downstream RAG generation configuration for the cardiology research project.
+#
+# Research Question:
+#   "Do conventional retrieval metrics reliably predict automated downstream
+#    answer quality in cardiovascular RAG?"
+#
+# Experimental Design:
+#   The experiment varies ONLY retrieval. Everything in generation remains
+#   identical across retrievers: model, temperature, prompts, context formatting.
+# ─────────────────────────────────────────────────────────────────────────────
+
+generation:
+  # ── Provider & Model ───────────────────────────────────────────────────────
+  provider: "gemini"
+  model: "gemini-3.1-flash-lite"
+
+  # ── Decoding parameters ────────────────────────────────────────────────────
+  temperature: 0.0
+  max_output_tokens: 512
+  top_p: 1.0
+
+  # ── Versioned Prompt Templates ─────────────────────────────────────────────
+  system_prompt_version: "v1.0"
+  generation_prompt_version: "v1.0"
+
+  # ── Concurrency & Rate Limiting ───────────────────────────────────────────
+  concurrency: 5
+  timeout_seconds: 30
+
+  # ── Retry Policy ───────────────────────────────────────────────────────────
+  retry:
+    max_retries: 3
+    initial_delay_seconds: 2.0
+    backoff_factor: 2.0
+    max_delay_seconds: 10.0
+
+  # ── Experiment Paths ───────────────────────────────────────────────────────
+  experiment:
+    input_runs_path: "experiments/results/stage3_retrieval_runs.json"
+    output_answers_path: "experiments/results/stage3_generated_answers.jsonl"
+    queries_path: "data/evaluation/queries.csv"
+    k_values: [5, 10, 20]
+    retrievers:
+      - "bm25"
+      - "dense"
+      - "lsh"
+      - "bm25_dense_rrf"
+      - "bm25_dense_lsh_rrf"
+    n_queries: 65
+    total_conditions: 975
