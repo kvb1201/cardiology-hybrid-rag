@@ -159,12 +159,13 @@ def main() -> None:
         total_candidate_tokens += u.get("candidatesTokenCount", 0)
         total_tokens += u.get("totalTokenCount", 0)
 
-    # Check for duplicate keys in output
-    all_keys = [(r["query_id"], r["retriever"], int(r["k"])) for r in output_records if r.get("status") == "success"]
-    duplicates = len(all_keys) - len(set(all_keys))
+    # Check for duplicate and missing keys in output
+    all_success_keys = [(r["query_id"], r["retriever"], int(r["k"])) for r in output_records if r.get("status") == "success"]
+    duplicates = len(all_success_keys) - len(set(all_success_keys))
+    missing_count = summary['total_conditions'] - len(set(all_success_keys))
 
     print("\n" + "=" * 70)
-    print("TASK 4D: GENERATION BATCH 1 VALIDATION REPORT")
+    print("TASK 4D: GENERATION EXECUTION & VALIDATION REPORT")
     print("=" * 70)
     print(f"Generator model:                  {model}")
     print(f"Previously completed conditions:  {summary.get('previously_completed', 0)}")
@@ -177,6 +178,7 @@ def main() -> None:
     print(f"Total completed conditions:       {summary['total_completed']}")
     print(f"Remaining conditions:             {summary['remaining_conditions']}")
     print(f"Duplicate experiment keys:        {duplicates}")
+    print(f"Missing experiment keys:          {missing_count}")
     print(f"Output JSONL path:                {args.output_file}")
     print(f"Elapsed time:                     {elapsed:.2f}s")
     if total_tokens > 0:
