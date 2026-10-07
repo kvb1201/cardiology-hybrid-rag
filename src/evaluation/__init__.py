@@ -21,6 +21,18 @@ from src.evaluation.retrieval_reconstruction import (
     save_retrieval_metrics,
     save_retrieval_runs,
 )
+from src.evaluation.evaluator import (
+    CohereEvaluatorClient,
+    DownstreamEvaluator,
+    MockEvaluatorClient,
+    build_evaluator_prompt,
+    format_reference_evidence_text,
+    load_completed_evaluations,
+    load_evaluator_config,
+    load_generated_answers,
+    load_reference_evidence_map,
+    validate_evaluator_response,
+)
 
 __all__ = [
     "ReferenceEvidenceCollection",
@@ -35,4 +47,14 @@ __all__ = [
     "reconstruct_retrieval_runs",
     "save_retrieval_metrics",
     "save_retrieval_runs",
+    "CohereEvaluatorClient",
+    "DownstreamEvaluator",
+    "MockEvaluatorClient",
+    "build_evaluator_prompt",
+    "format_reference_evidence_text",
+    "load_completed_evaluations",
+    "load_evaluator_config",
+    "load_generated_answers",
+    "load_reference_evidence_map",
+    "validate_evaluator_response",
 ]

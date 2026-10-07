@@ -1,0 +1,90 @@
+# evaluator.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Downstream LLM Evaluator configuration for the Cardiology-Chat research study.
+#
+# Research Question:
+#   "How well do conventional retrieval metrics predict evidence sufficiency
+#    and downstream answer correctness in cardiovascular RAG?"
+#
+# Methodological Controls:
+#   - Evaluator model is strictly independent of the generator (Cohere Command R
+#     evaluating Google Gemini 3.1 Flash-Lite answers).
+#   - Evaluator is strictly BLIND: receives ONLY Query, Answer, and Reference Evidence.
+#   - NEVER receives retriever name, K cutoff, retrieval ranks/scores, qrels grades,
+#     or generator model identity.
+#   - Primary evaluation dimensions:
+#       1. Evidence Coverage (0.0 to 1.0)
+#       2. Factual Consistency (0.0 to 1.0)
+#       3. Answer Relevance (0.0 to 1.0)
+#   - Composite quality = mean(Coverage, Consistency, Relevance) programmatically.
+# ─────────────────────────────────────────────────────────────────────────────
+
+evaluator:
+  # ── Provider & Model ───────────────────────────────────────────────────────
+  provider: "cohere"
+  model: "command-r-08-2024"
+
+  # ── Decoding parameters ────────────────────────────────────────────────────
+  temperature: 0.0
+  max_output_tokens: 512
+
+  # ── Versioned Prompt Templates ─────────────────────────────────────────────
+  system_prompt_version: "v1.0"
+  evaluator_prompt_version: "v1.0"
+
+  # ── Rate Limiting & Concurrency ───────────────────────────────────────────
+  # Cohere trial tier rate limit is 20 RPM. Delay of 3.5s ensures <= 15 RPM.
+  concurrency: 1
+  request_delay_seconds: 2.5
+  timeout_seconds: 90
+
+  # ── Retry Policy ───────────────────────────────────────────────────────────
+  retry:
+    max_retries: 3
+    initial_delay_seconds: 3.0
+    backoff_factor: 2.0
+    max_delay_seconds: 15.0
+
+  # ── Dimensions & Scoring Scale ─────────────────────────────────────────────
+  dimensions:
+    - name: "evidence_coverage"
+      min_score: 0.0
+      max_score: 1.0
+      description: "How completely the answer addresses facts supported by reference evidence relevant to the query."
+    - name: "factual_consistency"
+      min_score: 0.0
+      max_score: 1.0
+      description: "Whether claims in the answer are supported by reference evidence without contradictions or hallucinations."
+    - name: "answer_relevance"
+      min_score: 0.0
+      max_score: 1.0
+      description: "How directly and appropriately the answer addresses the clinical query using the available evidence."
+
+  composite_calculation: "arithmetic_mean"
+
+  # ── Experiment Paths ───────────────────────────────────────────────────────
+  paths:
+    reference_evidence_path: "data/evaluation/reference_evidence.json"
+    generated_answers_path: "experiments/results/stage3_generated_answers.jsonl"
+    output_evaluations_path: "experiments/results/stage3_evaluator_results.jsonl"
+    pilot_output_path: "experiments/results/stage3_evaluator_pilot_results.jsonl"
+    queries_path: "data/evaluation/queries.csv"
+
+  # ── Matrix Cohort Structure ────────────────────────────────────────────────
+  cohorts:
+    primary_grade_2_queries_count: 59
+    sensitivity_queries:
+      - "Q007"
+      - "Q013"
+      - "Q017"
+      - "Q021"
+      - "Q055"
+      - "Q061"
+    retrievers:
+      - "bm25"
+      - "dense"
+      - "lsh"
+      - "bm25_dense_rrf"
+      - "bm25_dense_lsh_rrf"
+    k_values: [5, 10, 20]
+    total_conditions: 975
