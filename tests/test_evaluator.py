@@ -22,6 +22,7 @@ Coverage:
 from __future__ import annotations
 
 import json
+import math
 import tempfile
 from pathlib import Path
 
@@ -30,6 +31,8 @@ import pytest
 from src.evaluation.evaluator import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_GENERATED_ANSWERS_PATH,
+    DEFAULT_OUTPUT_PATH,
+    DEFAULT_PILOT_OUTPUT_PATH,
     DEFAULT_REFERENCE_EVIDENCE_PATH,
     DownstreamEvaluator,
     EvaluatorError,
@@ -306,3 +309,82 @@ def test_mock_evaluator_deterministic_execution():
     res2 = client.evaluate("What is STEMI?", "STEMI is ST elevation MI.", "Evidence explains STEMI.")
     assert res1["scores"] == res2["scores"]
     assert 0.0 <= res1["scores"]["composite_quality"] <= 1.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. Artifact Schema & Population Integrity Tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_primary_evaluator_artifact_schema_and_integrity():
+    """Verify integrity of the completed 885-condition primary evaluator artifact."""
+    assert DEFAULT_OUTPUT_PATH.exists(), f"Evaluator results artifact missing: {DEFAULT_OUTPUT_PATH}"
+
+    records = []
+    with open(DEFAULT_OUTPUT_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+
+    success_records = [r for r in records if r.get("status") == "success"]
+    assert len(success_records) == 885, f"Expected 885 successful records, found {len(success_records)}"
+
+    seen_keys = set()
+    sensitivity_queries = {"Q007", "Q013", "Q017", "Q021", "Q055", "Q061"}
+    expected_retrievers = {"bm25", "dense", "lsh", "bm25_dense_rrf", "bm25_dense_lsh_rrf"}
+    expected_k = {5, 10, 20}
+
+    for r in success_records:
+        key = (r["query_id"], r["retriever"], r["k"])
+        assert key not in seen_keys, f"Duplicate condition key detected: {key}"
+        seen_keys.add(key)
+
+        assert r["query_id"] not in sensitivity_queries, f"Sensitivity query found in primary: {r['query_id']}"
+        assert r["retriever"] in expected_retrievers, f"Unexpected retriever: {r['retriever']}"
+        assert r["k"] in expected_k, f"Unexpected K: {r['k']}"
+
+        assert r["evaluator_provider"] == "cohere"
+        assert r["evaluator_model"] == "command-r-08-2024"
+        assert r["prompt_version"] == "v1.0"
+
+        # Scores validation
+        scores = r["scores"]
+        cov = scores["evidence_coverage"]
+        con = scores["factual_consistency"]
+        rel = scores["answer_relevance"]
+        comp = scores["composite_quality"]
+
+        for val in (cov, con, rel, comp):
+            assert isinstance(val, (int, float)) and not math.isnan(val)
+            assert 0.0 <= val <= 1.0
+
+        expected_comp = round((cov + con + rel) / 3.0, 4)
+        assert abs(comp - expected_comp) <= 1e-4, f"Composite mismatch for {key}: {comp} vs {expected_comp}"
+
+        # Rationales validation
+        rats = r["rationales"]
+        for dim in ("evidence_coverage", "factual_consistency", "answer_relevance"):
+            assert dim in rats and isinstance(rats[dim], str)
+
+
+def test_pilot_evaluator_artifact_integrity():
+    """Verify integrity of the 10-condition pilot evaluator artifact."""
+    assert DEFAULT_PILOT_OUTPUT_PATH.exists(), f"Pilot artifact missing: {DEFAULT_PILOT_OUTPUT_PATH}"
+
+    records = []
+    with open(DEFAULT_PILOT_OUTPUT_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+
+    assert len(records) == 10, f"Expected 10 pilot records, found {len(records)}"
+    for r in records:
+        assert r.get("status") == "success"
+        assert r["evaluator_provider"] == "cohere"
+        assert r["evaluator_model"] == "command-r-08-2024"
+        assert r["prompt_version"] == "v1.0"
+        scores = r["scores"]
+        expected_comp = round((scores["evidence_coverage"] + scores["factual_consistency"] + scores["answer_relevance"]) / 3.0, 4)
+        assert abs(scores["composite_quality"] - expected_comp) <= 1e-4
+
