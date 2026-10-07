@@ -1,392 +1,364 @@
-# Hybrid Text Retrieval for Evidence-Grounded Cardiovascular Diagnostic Reasoning
+# Conventional Retrieval Metrics and Downstream Answer Quality in Cardiovascular RAG
 
-A research prototype extending the retrieval component of the **Cardiology-Chat** paper.  
-The system combines sparse, approximate, and dense retrieval methods in a hybrid pipeline,
-with cross-encoder reranking and end-to-end RAG evaluation on cardiovascular diagnostic tasks.
+An empirical evaluation of the relationship between conventional retrieval metrics, reference-evidence coverage, and downstream answer quality in cardiovascular retrieval-augmented generation.
 
 ---
 
 ## Overview
 
-| Component | Method |
-|---|---|
-| Sparse retrieval | BM25 (rank-bm25) |
-| Approximate retrieval | MinHash + LSH (datasketch) |
-| Dense retrieval | Sentence-Transformers + FAISS |
-| Fusion | Reciprocal Rank Fusion (RRF) |
-| Reranking | Cross-encoder (sentence-transformers) |
-| Generation | RAG pipeline (LLM to be configured) |
-| Evaluation | Retrieval metrics + downstream diagnostic metrics |
+Retrieval-augmented generation (RAG) is widely explored for clinical decision-support to ground large language models (LLMs) in verifiable medical literature. Clinical RAG implementations standardly evaluate and optimize retrieval using classical Information Retrieval (IR) metrics—such as Normalized Discounted Cumulative Gain ($\text{NDCG@K}$), Mean Reciprocal Rank ($\text{MRR}$), Recall, and Mean Average Precision ($\text{MAP}$).
+
+However, these metrics primarily evaluate **ordinal ranking quality** of candidate passages. In contrast, generative language models consume retrieved passages as a joint, concatenated context set. Once an essential clinical fact is present within the prompt, its specific ranking position may exert negligible influence on whether the model incorporates it. Conversely, expanding context depth to maximize passage recall can introduce peripheral passages, diluting attention and increasing hallucinations.
+
+This project empirically investigates this **retrieval-generation metric alignment problem** in cardiovascular RAG. We evaluate whether conventional ranking metrics reliably reflect reference-evidence coverage and downstream generation quality across multiple retrieval architectures and depths.
+
+> **Scope Note:** This study does **not** introduce a novel retrieval algorithm, a new dense embedding model, or a clinical diagnostic tool. It is an empirical and methodological investigation of metric alignment in clinical RAG benchmarks.
+
+---
+
+## Research Question
+
+> **"How strongly are conventional retrieval metrics associated with evidence sufficiency and downstream answer quality in cardiovascular RAG?"**
+
+Because the study design is observational and non-interventional, all analyses evaluate statistical **associations** rather than asserting causal or predictive claims.
+
+---
+
+## Hypotheses
+
+- **Hypothesis 1 (H1 — Associational):** Higher conventional retrieval quality ($\text{NDCG@K}$) is positively associated with reference-evidence coverage.
+- **Hypothesis 2 (H2 — Associational, Decoupled):** Reference-evidence coverage has a stronger association with downstream answer quality than conventional retrieval quality alone.
+
+---
+
+## Research Design
+
+The study follows a frozen, fully blinded evaluation pipeline:
+
+```
+[Corpus V1: 22 Publications, 1,142 Chunks]
+                      │
+                      ▼
+[5 Retrieval Systems @ K ∈ {5, 10, 20}] ──► 15 Experimental Configurations
+                      │
+                      ▼
+[Generator: Gemini 3.1 Flash-Lite (T=0)] ──► Blinded Generation (885 Primary Conditions)
+                      │
+                      ▼
+[Evaluator: Cohere Command-R (T=0)] ──────► Cross-Family Blinded Scoring
+                      │
+                      ▼
+[Decoupled Target: DAQ = (FC + AR) / 2] ──► Statistical Association Analysis & Bootstrap
+```
+
+---
+
+## Corpus
+
+**Corpus V1** consists of license-verified, open-access cardiovascular literature:
+
+- **22 open-access cardiovascular publications** spanning clinical reviews, guideline/consensus-related documents, systematic reviews, and related cardiovascular literature.
+- **Licensing:** 100% verified Creative Commons Attribution (CC BY / CC BY 4.0).
+- **Volume:** 387 publication pages, 248,894 cleaned tokens.
+- **Passage Chunks:** 1,142 discrete text passages.
+- **Chunking Parameters:** Target size of 256 tokens, 32-token overlap, sentence-boundary-aware partitioning.
+- **Clinical Topics ($n=9$):** Heart Failure ($n=4$), Arrhythmia/Atrial Fibrillation ($n=4$), Myocardial Infarction ($n=3$), Coronary Artery Disease ($n=3$), Hypertension ($n=2$), Cardiomyopathy ($n=2$), Prevention ($n=2$), Dyslipidemia ($n=1$), Valvular Heart Disease ($n=1$).
+- **Thin-Source Limitation:** Document `HTN02` is a two-page editorial contributing few chunks (sparse passage candidate density for certain hypertension queries).
+
+---
+
+## Query Benchmark
+
+- **Total Queries:** 65 clinical queries formulated to reflect authentic inquiries in cardiovascular medicine.
+- **Cognitive Inquiry Types:**
+  - Treatment selection ($n=27$)
+  - Diagnostic criteria and workup ($n=17$)
+  - Pathophysiological mechanisms ($n=10$)
+  - Clinical prognosis ($n=6$)
+  - Risk stratification ($n=4$)
+  - Acute complications ($n=1$)
+- **Primary Evaluation Cohort ($n=59$ queries):** Queries with at least one verified grade-2 (essential reference evidence) passage in the corpus.
+- **Excluded Sensitivity Cohort ($n=6$ queries):** Queries containing only grade-1 (supporting/partial) passages (`Q007`, `Q013`, `Q017`, `Q021`, `Q055`, `Q061`), strictly excluded from primary downstream evaluation to prevent reference-incompleteness confounding.
+- **Primary Experimental Matrix:** 59 queries $\times$ 5 retrieval architectures $\times$ 3 cutoff depths = **885 conditions**.
+
+---
+
+## Reference Evidence
+
+Reference evidence consists of **protocol-annotated grade-2 reference evidence passages** from the frozen relevance dataset (`data/evaluation/qrels.csv`).
+
+- **Provenance:** Candidate passages were generated via BM25 top-20 pooling and keyword scanning, followed by rule-based and textual verification under formal annotation criteria (`data/evaluation/annotation_guidelines.md`).
+- **Nature of Evidence:** These labels represent an internally consistent literature reference standard for this corpus. They are **not** prospective adjudications by an independent panel of clinical cardiologists.
+
+---
+
+## Retrieval Architectures
+
+Five retrieval architectures representing common RAG retrieval paradigms were evaluated at cutoff depths $K \in \{5, 10, 20\}$:
+
+1. **BM25 (Lexical Baseline):** Okapi BM25 ($k_1 = 1.5, b = 0.75$) over tokenized chunk text.
+2. **Dense Semantic Retrieval:** `sentence-transformers/all-MiniLM-L6-v2` (384-dimensional dense embeddings, $L_2$-normalized, exact inner product search via FAISS `IndexFlatIP`).
+3. **Locality-Sensitive Hashing (LSH):** Word-level 3-shingle MinHash LSH (128 permutation hash functions, 16 bands $\times$ 8 rows, indexing threshold $= 0.05$, exact Jaccard similarity reranking).
+4. **BM25 + Dense RRF (Hybrid):** Reciprocal Rank Fusion combining BM25 and Dense with smoothing parameter $k_{\text{rrf}} = 60$.
+5. **BM25 + Dense + LSH RRF (Three-Way Hybrid):** Reciprocal Rank Fusion combining BM25, Dense, and LSH with $k_{\text{rrf}} = 60$.
+
+---
+
+## Generation Protocol
+
+- **Generator Model:** Google `gemini-3.1-flash-lite`.
+- **Inference Configuration:** Greedy decoding (temperature $= 0.0$, top-$p = 1.0$, maximum output $= 512$ tokens).
+- **Conditioning Prompt:** Clinical query concatenated with top-$K$ retrieved passages in retrieved order.
+- **Blinding:** Generator received zero metadata regarding retriever identity, cutoff depth $K$, retrieval similarity scores, relevance grades, or evaluation criteria.
+- **Execution:** All $65 \times 5 \times 3 = 975$ conditions completed successfully with zero API failures.
+
+---
+
+## Downstream Evaluation
+
+- **Evaluator Model:** Cohere `command-r-08-2024` via Cohere v2 API (`/v2/chat`).
+- **Inference Configuration:** Greedy decoding (temperature $= 0.0$, structured JSON output schema).
+- **Evaluator Blinding:** Received strictly: (1) clinical query, (2) generated answer, and (3) protocol-annotated reference evidence text. Did not receive retriever identity, cutoff depth $K$, retrieval scores, or generator identity.
+- **Evaluator Independence:** Generator and evaluator models were drawn from different commercial providers and architectural families, reducing the risk of direct intra-family evaluator-generator preference effects (though not eliminating all evaluator bias).
+- **Evaluation Dimensions ($[0.0, 1.0]$):**
+  1. *Evidence Coverage:* Degree to which the answer captures essential factual assertions from reference evidence.
+  2. *Factual Consistency:* Degree to which answer assertions are strictly supported by reference evidence without hallucination.
+  3. *Answer Relevance:* How directly and appropriately the answer addresses the clinical query.
+
+---
+
+## Downstream Answer Quality (DAQ)
+
+To avoid the **part-whole correlation artifact**—where correlating Evidence Coverage with a composite score that contains Evidence Coverage produces mathematical auto-correlation—we strictly decouple the target outcome:
+
+$$\mathbf{DAQ} = \frac{\text{Factual Consistency} + \text{Answer Relevance}}{2.0}$$
+
+Evidence Coverage is completely excluded from $\text{DAQ}$, allowing unbiased evaluation of how passage coverage relates to downstream generative quality.
+
+---
+
+## Statistical Analysis
+
+- **Inferential Unit:** Query-level observations ($n=59$) within each of the 15 experimental configurations.
+- **H1 Analysis:** Query-level Spearman rank correlation $\rho(\text{NDCG@K}, \text{Evidence Coverage})$.
+- **H2 Analysis:** Dependent correlation contrast $\Delta = \rho(\text{Coverage}, \text{DAQ}) - \rho(\text{NDCG@K}, \text{DAQ})$.
+- **Bootstrap Resampling:** Paired query bootstrap ($B = 2{,}000$ iterations, seed $= 42$), resampling 59 query IDs with replacement.
+- **Pairwise Contrasts:** Paired Wilcoxon signed-rank tests across queries at fixed $K$.
+
+---
+
+## Main Results
+
+### H1: Retrieval Metrics vs. Evidence Coverage
+
+Higher conventional retrieval quality ($\text{NDCG@K}$) is positively associated with Evidence Coverage across configurations:
+
+- **Global Population ($n=15$ configurations):** Mean Spearman $\rho = \mathbf{+0.4210}$, median $\rho = \mathbf{+0.3637}$, range $\mathbf{+0.2133 \text{ to } +0.7913}$ (15/15 positive, 13/15 statistically significant at $p < 0.05$).
+- **Competitive Viable Systems ($n=12$ configurations, excluding LSH):** Mean $\rho = \mathbf{+0.3345}$, median $\rho = \mathbf{+0.3341}$, range $\mathbf{+0.2133 \text{ to } +0.4473}$ (12/12 positive, 10/12 significant).
+
+#### LSH Floor Effect Diagnosis
+While LSH at $K=20$ achieved the nominal maximum correlation ($\rho = +0.7913, p < 10^{-13}$), this is driven by an extreme zero-hit floor effect:
+- 43 of 59 queries had $\text{NDCG@20} = 0.0$.
+- 35 of 59 queries had $\text{Evidence Coverage} = 0.0$.
+- Exactly 35 queries tied at joint zero $(0.0, 0.0)$.
+Because ties receive identical ranks, this shared failure mode produces an inflated correlation. LSH is not a competitive retrieval engine; the correlation reflects aligned failure modes rather than retrieval superiority.
+
+### H2: Evidence Coverage vs. Downstream Answer Quality (DAQ)
+
+Evidence Coverage demonstrates a substantially stronger association with $\text{DAQ}$ than conventional ranking metrics ($\text{NDCG@K}$):
+
+- **$\rho(\text{Coverage}, \text{DAQ})$:** Range $+0.8053$ to $+0.9644$, mean $\mathbf{+0.8854}$ (all $p < 0.0001$).
+- **$\rho(\text{NDCG}, \text{DAQ})$:** Range $+0.1269$ to $+0.6989$, global mean $+0.3678$, non-LSH mean $+0.2850$.
+- **Correlation Difference ($\Delta$):** Positive in **15 of 15 configurations ($100.0\%$)**, range $+0.2017$ to $+0.7370$, mean $\mathbf{+0.5175}$.
+- **Paired Bootstrap ($B=2{,}000$, Seed $= 42$):** $P(\Delta > 0) = \mathbf{1.0000}$ for all 15 configurations; all 95% percentile confidence intervals strictly exclude zero.
+
+*Decision:* **H2 Supported (Associational).**
+
+### BM25 vs. Dense Downstream Parity
+
+In conventional retrieval ranking, BM25 substantially outperformed Dense retrieval at $K=10$ ($\text{NDCG@10} = 0.5287$ vs. $0.3889$; $\text{Recall@10} = 0.3846$ vs. $0.2840$).
+
+Downstream, however, paired Wilcoxon signed-rank tests detected **no statistically significant difference** in $\text{DAQ}$ across queries:
+
+| Cutoff | BM25 Mean DAQ | Dense Mean DAQ | Difference | Wilcoxon $W$ | Two-Sided $p$-value | Significant? |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $K = 5$ | 0.7826 | 0.8127 | -0.0301 | 106.5 | 0.51455 | No |
+| $K = 10$ | 0.8220 | 0.8144 | +0.0076 | 28.0 | 0.21564 | No |
+| $K = 20$ | 0.8186 | 0.8123 | +0.0064 | 52.5 | 0.41925 | No |
+
+Dense semantic retrieval achieved downstream answer quality parity despite lower conventional ranking scores. (Note: Semantic paraphrasing is an interpretation of this parity, not a directly tested mechanism.)
+
+### Retrieval Depth Dynamics ($K \in \{5, 10, 20\}$)
+
+- $K=10$ achieved the highest $\text{DAQ}$ for 3 of the 5 architectures (BM25: $0.8220$; Dense: $0.8144$; BM25+Dense+LSH RRF: $0.8195$).
+- BM25 + Dense RRF peaked at $K=5$ ($0.8203$ vs. $0.8199$ at $K=10$).
+- Across all five retrieval architectures without exception, $\text{DAQ}$ at $K=20$ was lower than at $K=10$:
+  - BM25: $0.8220 \to 0.8186$ ($-0.0034$)
+  - Dense: $0.8144 \to 0.8123$ ($-0.0021$)
+  - BM25 + Dense RRF: $0.8199 \to 0.8144$ ($-0.0055$)
+  - BM25 + Dense + LSH RRF: $0.8195 \to 0.8140$ ($-0.0055$)
+  - LSH: $0.4610 \to 0.4475$ ($-0.0135$)
+- This drop mirrored systematic decreases in Factual Consistency from $K=10$ to $K=20$.
+- *Interpretation:* This pattern is consistent with the context dilution hypothesis (peripheral passages introducing distractors), but generator attention allocation was not directly measured. $K=10$ is not claimed to be universally optimal across all RAG systems.
+
+---
+
+## Publication Figures & Artifact Policy
+
+- **Included Verified Publication Figure:**
+  - `paper/figures/fig1_ndcg_vs_coverage_config.png` — Configuration-level scatter plot of mean $\text{NDCG@K}$ vs. mean Evidence Coverage ($n=15$). Verified to plot only pure retrieval and coverage metrics.
+- **Withheld Historical Composite Figures:**
+  - Preliminary exploratory figure artifacts (`fig2` to `fig6`) generated during earlier stages plotted downstream performance against a retracted 3-component composite score. To prevent presenting historical composite data as decoupled $\text{DAQ}$, these figures are withheld from the formal publication manuscript pending reproduction with decoupled outcomes.
+
+---
+
+## Limitations
+
+1. **Shared-Reference Dependency:** Evidence Coverage and retrieval relevance judgments both rely on the same underlying reference evidence passages.
+2. **Protocol-Annotated Relevance Labels:** Labels were established via BM25 pooling, keyword scanning, and rule-based verification, not prospective clinical cardiologist adjudication.
+3. **Automated LLM Proxy Evaluation:** Scored automatically by Cohere Command-R; automated scores evaluate textual adherence and do not establish clinical correctness or patient safety.
+4. **No Direct Assessment of Clinical Efficacy:** Evaluated factual consistency against literature, not real-world diagnostic or therapeutic outcomes.
+5. **Benchmark Scale:** The benchmark comprises 65 clinical queries and 22 open-access publications, providing 885 evaluated conditions across the experimental matrix. Generalizability to other specialties remains to be demonstrated.
+6. **Cohort Exclusion:** Six queries with only grade-1 evidence were excluded from primary downstream evaluation.
+7. **Observational Study Design:** Correlational analysis; does not establish causal mechanisms.
+8. **Incomplete Elimination of Evaluator Bias:** Cross-family separation reduces intra-family self-preference risk, but cannot eliminate all shared LLM bias.
+9. **LSH Floor Confounding:** Global correlation statistics are sensitive to LSH floor ties.
+10. **Thin-Source Document:** Document `HTN02` is a two-page editorial with sparse chunk density.
+11. **Untested Generative Mechanisms:** Semantic paraphrasing and attention allocation are interpretations, not directly verified mechanisms.
+12. **Historical Figure Artifact Retraction:** Downstream composite figures withheld from publication.
+
+---
+
+## Final Research Contribution
+
+1. **Empirical Evaluation of Metric Alignment:** Demonstrates that conventional IR ranking metrics ($\text{NDCG@K}$) correlate only modestly with passage evidence coverage ($\rho \approx +0.33$) and decouple from downstream answer quality among competitive retrieval architectures.
+2. **Target Metric Decoupling:** Proves the necessity of decoupling passage coverage from downstream outcomes to prevent part-whole correlation artifacts.
+3. **Downstream Retrieval Parity:** Demonstrates that dense semantic retrieval achieves downstream answer quality parity with BM25 despite substantial deficits in lexical ranking metrics.
+4. **Depth Attenuation Dynamics:** Documents non-monotonic retrieval depth behavior where deeper retrieval ($K=20$) consistently degrades factual consistency across all architectures.
+
+---
+
+## Project Status
+
+**Status: FINAL / FACT-LOCKED RESEARCH FREEZE**
+
+- **Corpus V1:** Frozen (22 documents, 1,142 chunks)
+- **Evaluation Benchmark:** Frozen (65 queries, 59 primary)
+- **Retrieval Experiments:** Complete (5 architectures $\times$ 3 cutoffs)
+- **Generation:** Complete ($975 / 975$ conditions, 100% success rate)
+- **Downstream Evaluation:** Complete ($885$ primary conditions)
+- **Statistical Analysis:** Complete (H1, decoupled H2, bootstrap $B=2{,}000$, Wilcoxon parity)
+- **Manuscript:** Complete ([`docs/stage5_manuscript_final.md`](docs/stage5_manuscript_final.md))
+- **LaTeX Paper:** Complete ([`paper/main.tex`](paper/main.tex), [`paper/references.bib`](paper/references.bib))
+- **Test Suite:** Passing (429 passed, 1 warning in test suite)
 
 ---
 
 ## Repository Structure
 
 ```
-cardiology-hybrid-rag/
+.
 ├── data/
-│   ├── raw/            # Original source documents (PDF/HTML/TXT/MD — not committed)
-│   ├── processed/      # Cleaned plain-text files (one per document, named by doc_id)
-│   ├── chunks/         # Serialised text chunks (chunks.jsonl)
-│   └── evaluation/     # Queries + ground-truth relevance judgements
-│
-├── indexes/
-│   ├── bm25/           # Serialised BM25 index
-│   ├── lsh/            # Serialised MinHash-LSH index
-│   └── faiss/          # FAISS vector index + chunk-ID mapping
-│
-├── src/
-│   ├── ingestion/
-│   │   ├── base.py             # RawDocument dataclass + BaseLoader ABC
-│   │   ├── pdf_loader.py       # PDF extraction via pypdf
-│   │   ├── html_loader.py      # HTML extraction via BeautifulSoup + lxml
-│   │   ├── text_loader.py      # Plain-text / Markdown / RST loader
-│   │   └── factory.py          # get_loader() + load_directory()
-│   ├── preprocessing/
-│   │   ├── cleaner.py          # 5-stage text cleaning pipeline
-│   │   └── chunker.py          # Chunking strategies + Chunk dataclass + JSONL I/O
-│   ├── retrieval/
-│   │   ├── base.py             # BaseRetriever ABC + RetrievalResult dataclass  [implemented]
-│   │   ├── bm25.py             # BM25Retriever (rank-bm25, k1=1.5, b=0.75)  [implemented]
-│   │   ├── lsh.py              # LSHRetriever (MinHash)  [stub — Stage 2B]
-│   │   ├── dense.py            # DenseRetriever (FAISS)  [stub — Stage 2C]
-│   │   └── hybrid.py           # HybridRetriever + reciprocal_rank_fusion()  [stub — Stage 2D]
-│   ├── reranking/
-│   │   └── reranker.py         # CrossEncoderReranker  [stub]
-│   ├── rag/
-│   │   └── pipeline.py         # RAGPipeline  [stub]
+│   ├── processed/                       # Cleaned document texts
+│   ├── chunks/                          # Serialised chunks (chunks.jsonl, 1,142 chunks)
 │   └── evaluation/
-│       ├── retrieval_metrics.py    # Precision@k, Recall@k, MRR, MAP, NDCG@k  [implemented]
-│       └── diagnostic_metrics.py  # EM, F1, Faithfulness, Clinical accuracy  [stub]
+│       ├── queries.csv                  # 65 clinical queries
+│       ├── qrels.csv                    # Graded passage relevance judgments
+│       ├── reference_evidence.json      # Compiled grade-2 reference passages
+│       ├── annotation_guidelines.md     # Relevance annotation guidelines
+│       └── evaluation_dataset_report.md # Dataset composition report
 │
-├── notebooks/
-│   ├── 01_data_exploration.ipynb       # Corpus statistics & vocabulary analysis
-│   ├── 02_chunking_analysis.ipynb      # Chunking strategy comparison
-│   ├── 03_retrieval_comparison.ipynb   # BM25 vs LSH vs Dense vs Hybrid
-│   ├── 04_hybrid_analysis.ipynb        # RRF tuning & reranker ablation
-│   └── 05_results_visualization.ipynb  # Final paper figures
+├── docs/
+│   ├── stage3_final_statistical_audit.md # Final statistical integrity audit
+│   ├── stage3_h1_reconciliation.md       # H1 reconciliation report
+│   ├── stage3_h2_correction.md           # H2 decoupling methodology
+│   ├── stage5_manuscript_blueprint.md    # Fact-locked manuscript blueprint
+│   ├── stage5_manuscript_final.md        # Corrected final research manuscript
+│   └── stage5_final_manuscript_audit.md  # Final manuscript compliance audit
 │
 ├── experiments/
-│   ├── configs/        # YAML/JSON experiment configuration files
-│   └── results/        # Per-run metric JSON files + exported figures
+│   └── results/
+│       ├── stage3_retrieval_runs.json    # Full retrieved passage runs
+│       ├── stage3_retrieval_metrics.json # Conventional IR metrics (NDCG, Recall, MRR)
+│       ├── stage3_generated_answers.jsonl# 975 generated clinical responses
+│       ├── stage3_evaluator_results.jsonl# Blinded Cohere evaluator outputs
+│       ├── stage3_h2_corrected.json      # Corrected decoupled DAQ correlations
+│       ├── stage3_h2_corrected.csv       # Summary CSV for corrected H2
+│       ├── stage3_h2_bootstrap.csv       # 2,000-iteration paired bootstrap distributions
+│       ├── stage3_daq_configuration_summary.csv # Configuration-level DAQ means
+│       ├── stage3_statistical_analysis.json # Full statistical artifacts
+│       ├── stage3_configuration_summary.csv
+│       ├── stage3_query_level_correlations.csv
+│       ├── stage3_pairwise_comparisons.csv
+│       └── stage3_figures/              # Generated figures archive
 │
+├── indexes/
+│   ├── bm25/                            # Serialized BM25 Okapi index
+│   ├── faiss/                           # Serialized FAISS IndexFlatIP dense index
+│   └── lsh/                             # Serialized MinHash LSH index
+│
+├── paper/
+│   ├── main.tex                         # Publication-quality LaTeX paper
+│   ├── references.bib                   # BibTeX bibliography (21 verified entries)
+│   └── figures/
+│       └── fig1_ndcg_vs_coverage_config.png # Verified publication figure
+│
+├── src/
+│   ├── ingestion/                       # Document ingestion loaders
+│   ├── preprocessing/                   # Text cleaner and chunker
+│   ├── retrieval/                       # BM25, Dense, LSH, and Hybrid fusion retrievers
+│   ├── generation/                      # Gemini generation pipeline
+│   └── evaluation/                      # Evaluator, DAQ calculation, and statistical tools
+│
+├── tests/                               # 429 comprehensive unit and integration tests
 ├── scripts/
-│   ├── build_corpus.py     # CLI: ingest raw docs → clean → chunk → JSONL  [implemented]
-│   ├── build_indexes.py    # CLI: build BM25 / LSH / FAISS indexes  [stub]
-│   └── run_evaluation.py   # CLI: run retrieval + diagnostic evaluation  [stub]
+│   └── validate_latex.py                # LaTeX static syntax and structural validator
 │
-├── tests/
-│   ├── conftest.py                 # Shared fixtures (sample files, text constants)
-│   ├── test_cleaner.py             # 45 tests — cleaning pipeline
-│   ├── test_chunker.py             # 46 tests — chunking strategies + JSONL I/O
-│   ├── test_ingestion.py           # 38 tests — loaders + factory
-│   ├── test_bm25.py                # 37 tests — tokenizer + BM25Retriever
-│   └── test_retrieval_metrics.py   # 49 tests — Precision@k, Recall@k, MRR, MAP, NDCG@k
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
+├── paper.zip                            # Portable LaTeX archive for Overleaf recompilation
+└── requirements.txt                     # Python dependencies
 ```
 
 ---
 
-## Quickstart
+## Reproducibility
 
-### 1. Clone and set up the environment
+### Setup
 
 ```bash
-git clone <repo-url>
-cd cardiology-hybrid-rag
-
 python3 -m venv .venv
 source .venv/bin/activate
-
-pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Add your corpus
-
-Place raw documents in `data/raw/`. Supported formats:
-
-| Format | Extensions | Loader |
-|--------|-----------|--------|
-| PDF | `.pdf` | `pypdf` — extracts text per page |
-| HTML | `.html`, `.htm` | `BeautifulSoup + lxml` — strips nav/footer/script, preserves headings |
-| Plain text | `.txt`, `.md`, `.rst` | UTF-8 decode with fallback encoding detection |
-
-> The sample documents in `data/raw/` (`sample_atrial_fibrillation.txt`,
-> `sample_heart_failure.md`, `sample_hypertension.html`) are synthetic
-> educational documents included only for testing. Replace them with your
-> real cardiology corpus before running experiments.
-
-### 3. Build the corpus
-
-Run the full ingestion → cleaning → chunking pipeline:
+### Running Tests
 
 ```bash
-python scripts/build_corpus.py \
-    --raw-dir    data/raw \
-    --proc-dir   data/processed \
-    --chunk-dir  data/chunks \
-    --chunk-size 256 \
-    --overlap    32 \
-    --strategy   sentence
+pytest tests/ -q
 ```
 
-#### All CLI options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--raw-dir` | `data/raw` | Input directory of raw documents |
-| `--proc-dir` | `data/processed` | Output directory for cleaned `.txt` files |
-| `--chunk-dir` | `data/chunks` | Output directory for `chunks.jsonl` |
-| `--output-file` | `chunks.jsonl` | Name of the JSONL output file |
-| `--chunk-size` | `256` | Target chunk size in whitespace-delimited tokens |
-| `--overlap` | `32` | Token overlap between consecutive chunks |
-| `--strategy` | `sentence` | Chunking strategy: `sentence`, `paragraph`, or `sliding_window` |
-| `--recursive` | off | Recurse into subdirectories of `--raw-dir` |
-
-#### Chunking strategies
-
-| Strategy | Description | Best for |
-|----------|-------------|----------|
-| `sentence` | Accumulates sentences up to `chunk_size` tokens; respects sentence boundaries | General use; good balance of context and granularity |
-| `paragraph` | Splits on blank lines; Markdown headings start new chunks | Documents with clear section structure |
-| `sliding_window` | Fixed token window with stride `chunk_size - overlap` | Quick baseline; fast but ignores linguistic structure |
-
-#### Example output (sentence strategy, 128 tokens, 16 overlap)
-
-```
-Documents loaded      : 3
-Documents skipped     : 0  (empty after cleaning)
-Documents failed      : 0
-Total chunks produced : 19
-Avg tokens per chunk  : 93.6
-Elapsed               : 0.27s
-```
-
-### 4. JSONL chunk format
-
-Each line of `data/chunks/chunks.jsonl` is a flat JSON object:
-
-```json
-{
-  "chunk_id":    "f9f3a4b74a20dbbb-0005",
-  "text":        "### Anticoagulation\n\nDirect oral anticoagulants (DOACs) ...",
-  "doc_id":      "f9f3a4b74a20dbbb",
-  "start_char":  2949,
-  "end_char":    3470,
-  "title":       "Atrial Fibrillation: Diagnosis and Management",
-  "source":      "/abs/path/to/data/raw/sample_atrial_fibrillation.txt",
-  "section":     "Rhythm Control",
-  "strategy":    "sentence",
-  "chunk_index": 5,
-  "total_chunks": 7
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `chunk_id` | `"{doc_id}-{index:04d}"` — globally unique |
-| `text` | Chunk content (cleaned, section headings preserved) |
-| `doc_id` | SHA-256 (first 16 hex chars) of the source file's absolute path |
-| `start_char` / `end_char` | Character offsets within the cleaned document text |
-| `title` | Document title (from PDF metadata, HTML `<title>`, or Markdown H1) |
-| `source` | Absolute path to the originating file |
-| `section` | Nearest preceding Markdown heading (`""` if none) |
-| `strategy` | Chunking strategy used |
-| `chunk_index` | 0-based position within this document |
-| `total_chunks` | Total chunk count for this document |
-
-### 5. Build the BM25 index
-
-Build the BM25 sparse retrieval index from the frozen corpus:
+### Validating LaTeX Paper
 
 ```bash
-python - << 'EOF'
-from src.preprocessing.chunker import load_chunks
-from src.retrieval.bm25 import BM25Retriever
-
-chunks = load_chunks("data/chunks/chunks.jsonl")
-r = BM25Retriever(index_path="indexes/bm25", k1=1.5, b=0.75)
-r.build(chunks)
-r.save()
-print(f"Index built: {r.corpus_size} chunks → indexes/bm25/bm25_index.pkl")
-EOF
+python3 scripts/validate_latex.py
 ```
 
-Or use the scripts CLI once `build_indexes.py` is fully implemented:
-
-```bash
-python scripts/build_indexes.py --chunk-file data/chunks/chunks.jsonl --build-bm25
-```
-
-### 6. Query the BM25 index
-
-```python
-from src.retrieval.bm25 import BM25Retriever
-
-r = BM25Retriever(index_path="indexes/bm25")
-r.load()
-
-results = r.search("pharmacological treatment of heart failure", top_k=5)
-for res in results:
-    print(f"Rank {res.rank}  score={res.score:.3f}  {res.chunk_id}  {res.text[:80]}...")
-```
-
-Each result contains: `rank`, `chunk_id`, `doc_id`, `score`, `text`, `metadata`.
-
-### 7. Build indexes *(LSH + Dense — not yet implemented)*
-
-```bash
-python scripts/build_indexes.py \
-    --chunk-file data/chunks/chunks.jsonl \
-    --build-bm25 --build-lsh --build-dense
-```
-
-### 8. Run evaluation *(not yet implemented — qrels required)*
-
-```bash
-python scripts/run_evaluation.py \
-    --query-file data/evaluation/queries.jsonl \
-    --run-name   baseline_hybrid \
-    --use-bm25 --use-lsh --use-dense \
-    --use-reranker
-```
-
----
-
-## BM25 Retrieval (Stage 2A)
-
-### How BM25 works
-
-BM25 (Best Match 25) is a probabilistic sparse retrieval model that ranks chunks
-by term-frequency/inverse-document-frequency scores.  For a query token `t` and
-chunk `d`:
-
-```
-score(t,d) = IDF(t) × (tf(t,d) × (k1 + 1)) / (tf(t,d) + k1 × (1 - b + b × |d|/avgdl))
-```
-
-where `k1` saturates term frequency and `b` normalises for chunk length.
-
-### Tokenizer
-
-Function `src.retrieval.bm25.tokenize(text)`:
-- Lowercase the input
-- Extract alphanumeric runs that contain at least one letter (preserves `SGLT-2`, `HFrEF`, `CHA2DS2-VASc`, `INR`, `mg/kg`)
-- **No stemming, no lemmatisation, no stopword removal**
-- Deterministic and side-effect-free
-
-```python
-from src.retrieval.bm25 import tokenize
-tokenize("SGLT-2 inhibitor reduces HF hospitalisation by 25%.")
-# → ['sglt-2', 'inhibitor', 'reduces', 'hf', 'hospitalisation', 'by']
-```
-
-### Baseline parameters
-
-| Parameter | Value | Description |
-|---|---|---|
-| `k1` | 1.5 | Term-frequency saturation |
-| `b` | 0.75 | Document-length normalisation |
-
-These are the standard BM25Okapi defaults.  **Do not tune until a frozen evaluation set (qrels) exists.**  Parameters are configurable in `experiments/configs/retrieval.yaml`.
-
-### Index facts (Corpus V1)
-
-| Metric | Value |
-|---|---|
-| Indexed chunks | 1,142 |
-| Build time | 0.124 s |
-| Index file | `indexes/bm25/bm25_index.pkl` |
-| Index size | 4.5 MB |
-| Implementation | `rank-bm25==0.2.2` BM25Okapi |
-
-### Smoke-test results (sanity check only — not scientific evaluation)
-
-| Query | Rank 1 chunk | Doc |
-|---|---|---|
-| "pharmacological treatments for heart failure" | HF02-0000 | HF02 |
-| "risk factors for atrial fibrillation" | AF04-0030 | AF04 |
-| "hypertensive heart disease diagnosed" | HTN01-0021 | HTN01 |
-| "mechanisms of myocardial infarction" | MI03-0000 | MI03 |
-| "imaging modalities in cardiomyopathy" | CMY02-0003 | CMY02 |
-
-All top-1 results are topically correct.  Scientific evaluation requires frozen relevance judgments (qrels) — see `data/evaluation/qrels_schema.md`.
-
-### Retrieval metrics
-
-`src/evaluation/retrieval_metrics.py` implements:
-
-| Metric | Function |
-|---|---|
-| Precision@k | `precision_at_k(retrieved, relevant, k)` |
-| Recall@k | `recall_at_k(retrieved, relevant, k)` |
-| Reciprocal Rank | `reciprocal_rank(retrieved, relevant)` |
-| Mean Reciprocal Rank | `mean_reciprocal_rank(all_retrieved, all_relevant)` |
-| Average Precision | `average_precision(retrieved, relevant)` |
-| Mean Average Precision | `mean_average_precision(all_retrieved, all_relevant)` |
-| NDCG@k | `ndcg_at_k(retrieved, relevant, k, graded_relevance=None)` |
-
-All functions accept generic Python types and support both binary and graded relevance (0/1/2).  They are retriever-agnostic and will evaluate BM25, LSH, Dense, Hybrid, and Reranker with identical code.
-
----
-
-`src/preprocessing/cleaner.py` applies these stages in order:
-
-1. **Ligature / Unicode normalisation** — decodes `ﬁ`→`fi`, `ﬀ`→`ff`, en-dash→`-`, `\u00a0`→space, Greek letter expansions, etc.
-2. **PDF artefact removal** — strips form feeds (`\f`), DOI lines, copyright notices, "Downloaded from …", "Received / Accepted" publication metadata.
-3. **Soft-hyphen repair** — rejoins words split across lines by PDF column layout (`cardio-\nvascular` → `cardiovascular`).
-4. **Per-line cleaning** — removes standalone page numbers, single-character lines, symbol-only lines; normalises tabs and multiple spaces.
-5. **Blank-line collapsing** — reduces 3+ consecutive newlines to at most 2.
-
-Preserved intentionally: compound-term hyphens (`ST-elevation`), dose slashes (`mg/kg`), lab-value colons (`Na: 138 mEq/L`), abbreviation parentheses (`(AF)`), citation brackets (`[1,2]`), `±`, `%`, blood pressure notation, Markdown headings.
-
----
-
-## Running Tests
-
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Run a specific module
-python -m pytest tests/test_cleaner.py -v
-python -m pytest tests/test_chunker.py -v
-python -m pytest tests/test_ingestion.py -v
-```
-
-Current status: **215 / 215 tests passing**.
-
----
-
-## Development Stages
-
-- [x] **Stage 0** — Repository scaffold
-- [x] **Stage 1** — Ingestion + cleaning + chunking pipeline
-- [x] **Stage 2A** — BM25 sparse retrieval baseline + retrieval metrics *(current)*
-- [ ] **Stage 2B** — MinHash-LSH retrieval
-- [ ] **Stage 2C** — Dense (FAISS) retrieval
-- [ ] **Stage 2D** — Hybrid RRF fusion
-- [ ] **Stage 3** — Cross-encoder reranking
-- [ ] **Stage 4** — RAG pipeline + LLM integration
-- [ ] **Stage 5** — Retrieval evaluation (requires frozen qrels)
-- [ ] **Stage 6** — Downstream diagnostic evaluation
-- [ ] **Stage 7** — Ablation study + error analysis
-- [ ] **Stage 10** — Ablation study + error analysis
+> **Security Note:** API credentials for Gemini and Cohere must never be committed to source control. Ensure `.env` is listed in `.gitignore`.
 
 ---
 
 ## Citation
 
-This prototype extends the retrieval methodology described in:
-
-> *Cardiology-Chat* — [citation to be added]
+```bibtex
+@article{cardiology_rag_2026,
+  title   = {Conventional Retrieval Metrics and Downstream Answer Quality in Cardiovascular RAG: An Empirical Evaluation},
+  author  = {Anonymous Authors},
+  journal = {Working Manuscript},
+  year    = {2026}
+}
+```
 
 ---
 
-## License
+## Disclaimer
 
-[To be determined]
+This repository contains an empirical research prototype and evaluation study. It is **not** a clinical decision-support system and **must not** be used for clinical diagnosis, treatment decisions, patient care, or medical advice.
